@@ -1,498 +1,406 @@
-<!doctype html>
-<html lang="es" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ley 594 - Juego de Combinación</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
-  <style>
-    * { font-family: 'Kanit', sans-serif; }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ley 594 - Juego de Combinación IUE</title>
+    <!-- React y ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel para transformar JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
 
-    @keyframes matchPulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.04); }
-      100% { transform: scale(1); }
-    }
-    @keyframes confettiFall {
-      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(120px) rotate(720deg); opacity: 0; }
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes winPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    .match-pulse { animation: matchPulse 0.5s ease; }
-    .slide-up { animation: slideUp 0.4s ease both; }
-    .fade-in { animation: fadeIn 0.3s ease both; }
-    .win-pulse { animation: winPulse 1s ease infinite; }
+        @keyframes matchPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(150px) rotate(720deg); opacity: 0; }
+        }
 
-    .term-card {
-      transition: all 0.25s ease;
-      cursor: pointer;
-      border-left: 4px solid transparent;
-    }
-    .term-card:hover:not(.matched):not(.selected) {
-      border-left-color: #FF801F;
-      background: #FFF7F0;
-    }
-    .term-card.selected {
-      border-left-color: #FF801F;
-      background: #FFF0E0;
-      box-shadow: 0 2px 12px rgba(255,128,31,0.15);
-    }
-    .term-card.matched {
-      border-left-color: #22c55e;
-      background: #f0fdf4;
-      opacity: 0.7;
-      pointer-events: none;
-    }
+        .match-pulse { animation: matchPulse 0.5s ease; }
+        .shake { animation: shake 0.4s ease; }
+        .slide-up { animation: slideUp 0.4s ease both; }
+        .win-pulse { animation: winPulse 1.5s ease infinite; }
+        .confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            animation: confettiFall 1.5s ease forwards;
+            pointer-events: none;
+            z-index: 100;
+        }
 
-    .def-card {
-      transition: all 0.25s ease;
-      cursor: pointer;
-      border-right: 4px solid transparent;
-    }
-    .def-card:hover:not(.matched):not(.selected) {
-      border-right-color: #FF801F;
-      background: #FFF7F0;
-    }
-    .def-card.selected {
-      border-right-color: #FF801F;
-      background: #FFF0E0;
-      box-shadow: 0 2px 12px rgba(255,128,31,0.15);
-    }
-    .def-card.matched {
-      border-right-color: #22c55e;
-      background: #f0fdf4;
-      opacity: 0.7;
-      pointer-events: none;
-    }
-    .def-card.wrong, .term-card.wrong {
-      animation: shake 0.4s ease;
-      background: #fef2f2 !important;
-      border-color: #ef4444 !important;
-    }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-6px); }
-      75% { transform: translateX(6px); }
-    }
+        .card-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
 
-    .hint-btn {
-      transition: all 0.2s ease;
-    }
-    .hint-btn:hover {
-      background: #FF801F;
-      color: white;
-    }
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
 
-    .confetti-piece {
-      position: fixed;
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      animation: confettiFall 1.5s ease forwards;
-      pointer-events: none;
-      z-index: 999;
-    }
+        // Componente de Iconos SVG Integrado (Evita errores de librerías externas)
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const paths = {
+                'landmark': <path d="m3 21 18 0M3 7l9-4 9 4M5 21V10M19 21V10M9 21V10M15 21V10M2 7l10-5 10 5" />,
+                'folder-open': <path d="M2 17V4a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM2 9h20" />,
+                'layers': (
+                    <>
+                        <path d="m12 2 10 5-10 5-10-5 10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </>
+                ),
+                'calendar': (
+                    <>
+                        <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                        <path d="M16 2v4M8 2v4M3 10h18" />
+                    </>
+                ),
+                'archive': (
+                    <>
+                        <rect width="20" height="5" x="2" y="3" rx="1" />
+                        <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
+                    </>
+                ),
+                'building': (
+                    <>
+                        <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
+                        <path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01M8 18h.01M16 18h.01" />
+                    </>
+                ),
+                'clipboard-list': (
+                    <>
+                        <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01" />
+                    </>
+                ),
+                'users': (
+                    <>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </>
+                ),
+                'check-circle': <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3" />,
+                'lightbulb': <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5M9 18h6M10 22h4" />,
+                'rotate-ccw': <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5" />,
+                'tag': <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2zM7 7h.01" />,
+                'file-text': (
+                    <>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </>
+                ),
+                'info': (
+                    <>
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </>
+                ),
+                'x': (
+                    <>
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </>
+                ),
+                'award': (
+                    <>
+                        <circle cx="12" cy="8" r="7" />
+                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                    </>
+                )
+            };
 
-    .progress-fill {
-      transition: width 0.6s ease;
-    }
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    {paths[name] || null}
+                </svg>
+            );
+        };
 
-    .icon-badge {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+        const DATA = [
+            { id: 0, term: "Ley 594 de 2000", def: "Marco legal que establece las reglas y principios generales que regulan la función archivística del Estado Colombiano.", hint: "Marco legal del Estado Colombiano.", icon: "landmark" },
+            { id: 1, term: "Gestión Documental", def: "Conjunto de actividades administrativas y técnicas para la planificación, manejo y organización de documentos desde su origen.", hint: "Planificación y organización desde el origen.", icon: "folder-open" },
+            { id: 2, term: "Archivo Total", def: "Concepto que hace referencia al proceso integral de los documentos en su ciclo vital: gestión, central e histórico.", hint: "Proceso integral y ciclo vital.", icon: "layers" },
+            { id: 3, term: "TRD", def: "Listado de series y tipos documentales a los cuales se asigna el tiempo de permanencia en cada etapa del ciclo vital.", hint: "Tiempo de permanencia y series.", icon: "calendar" },
+            { id: 4, term: "Función Archivística", def: "Actividades que comprenden desde la elaboración del documento hasta su eliminación o conservación permanente.", hint: "Desde la elaboración hasta la eliminación.", icon: "archive" },
+            { id: 5, term: "Archivo Público", def: "Documentos pertenecientes a entidades oficiales o derivados de la prestación de un servicio público por privados.", hint: "Entidades oficiales o servicio público.", icon: "building" },
+            { id: 6, term: "Inventario Documental", def: "Instrumento de control obligatorio para la administración pública que asegura el manejo de documentos en sus diferentes fases.", hint: "Instrumento de control obligatorio.", icon: "clipboard-list" },
+            { id: 7, term: "Servidores Públicos", def: "Personas legalmente responsables de la organización, conservación, uso y manejo de los documentos públicos.", hint: "Personas responsables del manejo público.", icon: "users" }
+        ];
 
-    .toast-msg {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      animation: slideUp 0.3s ease, fadeOut 0.4s ease 2.2s forwards;
-    }
-    @keyframes fadeOut {
-      to { opacity: 0; transform: translateX(-50%) translateY(10px); }
-    }
+        const COLORS = {
+            naranja: '#F26522',
+            azul: '#003366',
+            verde: '#8CC63F',
+            blanco: '#FFFFFF'
+        };
 
-    .roadmap-line {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: linear-gradient(to bottom, #FF801F22, #FF801F44, #FF801F22);
-    }
-  </style>
-  <style>body { box-sizing: border-box; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full">
-  <div id="app" class="h-full w-full bg-white overflow-auto">
-   <!-- Header -->
-   <header class="w-full" style="background: linear-gradient(135deg, #FF801F 0%, #FF9A4A 100%);">
-    <div class="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between flex-wrap gap-4">
-     <div class="flex items-center gap-3 flex-1"><img src="https://www.iue.edu.co/wp-content/uploads/2022/05/institucion-universitaria-envigado-iue-logo.svg" alt="IUE Logo" loading="lazy" style="height:44px;width:auto;filter:brightness(0) invert(1);" onerror="console.error('Logo failed to load:', this.src); this.style.display='none';">
-      <div class="border-r border-white/30 h-11"></div>
-      <div>
-       <h1 id="gameTitle" class="text-white text-xl font-medium tracking-wide" style="font-weight:300;">Ley 594 de 2000 — Combinación de Columnas</h1>
-       <p class="text-white/80 text-xs font-light">Ley General de Archivos · Colombia</p>
-      </div>
-     </div>
-     <div class="flex items-center gap-3">
-      <div id="scoreDisplay" class="bg-white/20 rounded-lg px-3 py-1.5 text-white text-sm font-light flex items-center gap-2">
-       <i data-lucide="check-circle" style="width:16px;height:16px;"></i> <span id="scoreText">0 / 8</span>
-      </div><button id="hintBtn" class="hint-btn bg-white/20 rounded-lg px-3 py-1.5 text-white text-sm font-light flex items-center gap-2" onclick="showHint()"> <i data-lucide="lightbulb" style="width:16px;height:16px;"></i> Pista </button> <button class="bg-white/20 rounded-lg px-3 py-1.5 text-white text-sm font-light flex items-center gap-2" onclick="resetGame()"> <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i> Reiniciar </button>
-     </div>
-    </div><!-- Progress bar -->
-    <div class="w-full h-1.5 bg-white/20">
-     <div id="progressBar" class="progress-fill h-full" style="width:0%; background:#fff;"></div>
-    </div>
-   </header><!-- Instructions -->
-   <div class="max-w-5xl mx-auto px-4 pt-5 pb-2">
-    <p class="text-gray-500 text-sm font-light text-center">Selecciona un <strong style="color:#FF801F;">término</strong> a la izquierda y luego su <strong style="color:#FF801F;">definición</strong> correspondiente a la derecha.</p>
-   </div><!-- Game Area -->
-   <main class="max-w-5xl mx-auto px-4 py-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-     <!-- Terms Column -->
-     <div>
-      <div class="flex items-center gap-2 mb-3 px-1">
-       <div class="icon-badge" style="background:#FFF0E0;">
-        <i data-lucide="tag" style="width:16px;height:16px;color:#FF801F;"></i>
-       </div><span class="text-sm font-medium" style="color:#FF801F;">TÉRMINOS</span>
-      </div>
-      <div id="termsCol" class="flex flex-col gap-2.5"></div>
-     </div><!-- Definitions Column -->
-     <div>
-      <div class="flex items-center gap-2 mb-3 px-1">
-       <div class="icon-badge" style="background:#FFF0E0;">
-        <i data-lucide="file-text" style="width:16px;height:16px;color:#FF801F;"></i>
-       </div><span class="text-sm font-medium" style="color:#FF801F;">DEFINICIONES</span>
-      </div>
-      <div id="defsCol" class="flex flex-col gap-2.5"></div>
-     </div>
-    </div>
-   </main><!-- Hint Panel -->
-   <div id="hintPanel" class="hidden max-w-5xl mx-auto px-4 pb-4">
-    <div class="rounded-lg border border-orange-200 bg-orange-50 p-4 fade-in">
-     <div class="flex items-start gap-3">
-      <i data-lucide="info" style="width:20px;height:20px;color:#FF801F;flex-shrink:0;margin-top:2px;"></i>
-      <div>
-       <p class="text-sm font-medium" style="color:#FF801F;">Pista</p>
-       <p id="hintText" class="text-sm text-gray-600 font-light mt-1"></p>
-      </div><button onclick="document.getElementById('hintPanel').classList.add('hidden')" class="ml-auto text-gray-400 hover:text-gray-600"> <i data-lucide="x" style="width:16px;height:16px;"></i> </button>
-     </div>
-    </div>
-   </div><!-- Win Overlay -->
-   <div id="winOverlay" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 fade-in" style="backdrop-filter:blur(4px);">
-    <div class="bg-white rounded-2xl p-8 max-w-md mx-4 text-center slide-up shadow-2xl">
-     <div class="win-pulse inline-block mb-4">
-      <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto" style="background:linear-gradient(135deg,#FF801F,#FF9A4A);">
-       <i data-lucide="award" style="width:40px;height:40px;color:white;"></i>
-      </div>
-     </div>
-     <h2 class="text-2xl font-medium text-gray-800 mb-2">¡Misión Cumplida!</h2>
-     <p id="winMessage" class="text-gray-500 font-light mb-1">Cumplimiento normativo asegurado.</p>
-     <p id="winStats" class="text-sm text-gray-400 font-light mb-6"></p><button onclick="resetGame()" class="px-6 py-2.5 rounded-lg text-white font-light text-sm" style="background:#FF801F;"> Jugar de Nuevo </button>
-    </div>
-   </div>
-  </div>
-  <script>
-const DATA = [
-  {
-    id: 0,
-    term: "Ley 594 de 2000",
-    def: "Marco legal que establece las reglas y principios generales que regulan la función archivística del Estado Colombiano.",
-    hint: "Palabras clave: marco legal, principios generales, Estado Colombiano.",
-    icon: "landmark"
-  },
-  {
-    id: 1,
-    term: "Gestión Documental",
-    def: "Conjunto de actividades administrativas y técnicas para la planificación, manejo y organización de documentos desde su origen.",
-    hint: "Palabras clave: planificación, manejo, organización, origen del documento.",
-    icon: "folder-open"
-  },
-  {
-    id: 2,
-    term: "Archivo Total",
-    def: "Concepto que hace referencia al proceso integral de los documentos en su ciclo vital: gestión, central e histórico.",
-    hint: "Palabras clave: ciclo vital, tres fases (gestión, central, histórico).",
-    icon: "layers"
-  },
-  {
-    id: 3,
-    term: "TRD",
-    def: "Listado de series y tipos documentales a los cuales se asigna el tiempo de permanencia en cada etapa del ciclo vital.",
-    hint: "Palabras clave: series documentales, tiempo de permanencia, retención.",
-    icon: "calendar"
-  },
-  {
-    id: 4,
-    term: "Función Archivística",
-    def: "Actividades que comprenden desde la elaboración del documento hasta su eliminación o conservación permanente.",
-    hint: "Palabras clave: elaboración, eliminación, conservación permanente.",
-    icon: "archive"
-  },
-  {
-    id: 5,
-    term: "Archivo Público",
-    def: "Documentos pertenecientes a entidades oficiales o derivados de la prestación de un servicio público por privados.",
-    hint: "Palabras clave: entidades oficiales, servicio público, privados.",
-    icon: "building"
-  },
-  {
-    id: 6,
-    term: "Inventario Documental",
-    def: "Instrumento de control obligatorio para la administración pública que asegura el manejo de documentos en sus diferentes fases.",
-    hint: "Palabras clave: instrumento de control, obligatorio, administración pública.",
-    icon: "clipboard-list"
-  },
-  {
-    id: 7,
-    term: "Servidores Públicos",
-    def: "Personas legalmente responsables de la organización, conservación, uso y manejo de los documentos públicos.",
-    hint: "Palabras clave: responsabilidad legal, conservación, documentos públicos.",
-    icon: "users"
-  }
-];
+        const App = () => {
+            const [terms, setTerms] = useState([]);
+            const [defs, setDefs] = useState([]);
+            const [selectedTerm, setSelectedTerm] = useState(null);
+            const [selectedDef, setSelectedDef] = useState(null);
+            const [matched, setMatched] = useState(new Set());
+            const [wrongPair, setWrongPair] = useState(null);
+            const [attempts, setAttempts] = useState(0);
+            const [hint, setHint] = useState(null);
+            const [showWin, setShowWin] = useState(false);
 
-let selectedTerm = null;
-let selectedDef = null;
-let matched = new Set();
-let attempts = 0;
-let shuffledTerms = [];
-let shuffledDefs = [];
+            const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
 
-const defaultConfig = {
-  game_title: "Ley 594 de 2000 — Combinación de Columnas",
-  success_message: "¡Correcto! Cumplimiento normativo asegurado",
-  background_color: "#ffffff",
-  accent_color: "#FF801F",
-  text_color: "#374151",
-  surface_color: "#FFF7F0",
-  secondary_action_color: "#6b7280",
-  font_family: "Kanit",
-  font_size: 14
-};
+            const initGame = useCallback(() => {
+                setTerms(shuffle(DATA));
+                setDefs(shuffle(DATA));
+                setMatched(new Set());
+                setSelectedTerm(null);
+                setSelectedDef(null);
+                setAttempts(0);
+                setHint(null);
+                setShowWin(false);
+            }, []);
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+            useEffect(() => {
+                initGame();
+            }, [initGame]);
 
-function buildGame() {
-  shuffledTerms = shuffle(DATA);
-  shuffledDefs = shuffle(DATA);
-  const termsCol = document.getElementById('termsCol');
-  const defsCol = document.getElementById('defsCol');
-  termsCol.innerHTML = '';
-  defsCol.innerHTML = '';
+            const handleMatch = (tId, dId) => {
+                setAttempts(prev => prev + 1);
+                if (tId === dId) {
+                    const newMatched = new Set(matched);
+                    newMatched.add(tId);
+                    setMatched(newMatched);
+                    setSelectedTerm(null);
+                    setSelectedDef(null);
+                    if (newMatched.size === DATA.length) {
+                        setTimeout(() => setShowWin(true), 600);
+                    }
+                } else {
+                    setWrongPair([tId, dId]);
+                    setTimeout(() => {
+                        setWrongPair(null);
+                        setSelectedTerm(null);
+                        setSelectedDef(null);
+                    }, 600);
+                }
+            };
 
-  shuffledTerms.forEach((item, i) => {
-    const el = document.createElement('div');
-    el.className = 'term-card rounded-lg border border-gray-200 p-3 flex items-center gap-3 slide-up';
-    el.style.animationDelay = `${i * 60}ms`;
-    el.dataset.id = item.id;
-    el.innerHTML = `
-      <div class="icon-badge" style="background:#FFF0E0;">
-        <i data-lucide="${item.icon}" style="width:16px;height:16px;color:#FF801F;"></i>
-      </div>
-      <span class="text-sm font-light text-gray-700">${item.term}</span>
-    `;
-    el.addEventListener('click', () => selectTerm(el, item.id));
-    termsCol.appendChild(el);
-  });
+            const selectTerm = (id) => {
+                if (matched.has(id)) return;
+                setSelectedTerm(id);
+                if (selectedDef !== null) handleMatch(id, selectedDef);
+            };
 
-  shuffledDefs.forEach((item, i) => {
-    const el = document.createElement('div');
-    el.className = 'def-card rounded-lg border border-gray-200 p-3 slide-up';
-    el.style.animationDelay = `${i * 60 + 30}ms`;
-    el.dataset.id = item.id;
-    el.innerHTML = `<span class="text-xs font-light text-gray-600 leading-relaxed">${item.def}</span>`;
-    el.addEventListener('click', () => selectDef(el, item.id));
-    defsCol.appendChild(el);
-  });
+            const selectDef = (id) => {
+                if (matched.has(id)) return;
+                setSelectedDef(id);
+                if (selectedTerm !== null) handleMatch(selectedTerm, id);
+            };
 
-  lucide.createIcons();
-}
+            const showRandomHint = () => {
+                const pending = DATA.filter(d => !matched.has(d.id));
+                if (pending.length === 0) return;
+                const pick = pending[Math.floor(Math.random() * pending.length)];
+                setHint(`Pista para "${pick.term}": ${pick.hint}`);
+            };
 
-function selectTerm(el, id) {
-  if (matched.has(id)) return;
-  document.querySelectorAll('.term-card.selected').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedTerm = id;
-  tryMatch();
-}
+            const accuracy = attempts > 0 ? Math.round((matched.size / attempts) * 100) : 0;
 
-function selectDef(el, id) {
-  if (matched.has(id)) return;
-  document.querySelectorAll('.def-card.selected').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedDef = id;
-  tryMatch();
-}
+            return (
+                <div className="min-h-screen flex flex-col bg-slate-50">
+                    {/* Header Institucional */}
+                    <header className="px-8 py-5 flex flex-wrap items-center justify-between gap-4 shadow-lg text-white border-b-4" style={{ background: `linear-gradient(135deg, ${COLORS.azul} 0%, #004d99 100%)`, borderBottomColor: COLORS.naranja }}>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#003366] font-black text-xl shadow-md">IUE</div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight uppercase">Combinación de Columnas</h1>
+                                <p className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80">Ley General de Archivos 594</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white/10 rounded-xl px-4 py-2 flex items-center gap-3">
+                                <Icon name="check-circle" size={20} className="text-orange-400" />
+                                <span className="font-black text-lg">{matched.size} / {DATA.length}</span>
+                            </div>
+                            <button onClick={showRandomHint} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                                <Icon name="lightbulb" size={24} />
+                            </button>
+                            <button onClick={initGame} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                                <Icon name="rotate-ccw" size={24} />
+                            </button>
+                        </div>
+                    </header>
 
-function tryMatch() {
-  if (selectedTerm === null || selectedDef === null) return;
-  attempts++;
-  const tEl = document.querySelector(`.term-card[data-id="${selectedTerm}"]`);
-  const dEl = document.querySelector(`.def-card[data-id="${selectedDef}"]`);
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-slate-200">
+                        <div 
+                            className="h-full transition-all duration-700 ease-out" 
+                            style={{ width: `${(matched.size / DATA.length) * 100}%`, backgroundColor: COLORS.verde }}
+                        ></div>
+                    </div>
 
-  if (selectedTerm === selectedDef) {
-    matched.add(selectedTerm);
-    tEl.classList.remove('selected');
-    dEl.classList.remove('selected');
-    tEl.classList.add('matched', 'match-pulse');
-    dEl.classList.add('matched', 'match-pulse');
-    updateScore();
-    showToast(window.elementSdk?.config?.success_message || defaultConfig.success_message);
-    spawnConfetti(tEl);
+                    <main className="flex-1 max-w-6xl mx-auto w-full p-6">
+                        <p className="text-center text-slate-500 text-sm mb-8 font-medium">
+                            Relaciona el <strong style={{ color: COLORS.naranja }}>término</strong> con su <strong style={{ color: COLORS.naranja }}>definición</strong> correcta.
+                        </p>
 
-    if (matched.size === DATA.length) {
-      setTimeout(showWin, 800);
-    }
-  } else {
-    tEl.classList.add('wrong');
-    dEl.classList.add('wrong');
-    setTimeout(() => {
-      tEl.classList.remove('wrong', 'selected');
-      dEl.classList.remove('wrong', 'selected');
-    }, 600);
-  }
-  selectedTerm = null;
-  selectedDef = null;
-}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+                            {/* Column Terms */}
+                            <div className="space-y-3">
+                                <h3 className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest px-2 mb-4">
+                                    <Icon name="tag" size={14} /> Términos
+                                </h3>
+                                {terms.map((item, idx) => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => selectTerm(item.id)}
+                                        className={`
+                                            card-transition p-4 rounded-2xl border-2 flex items-center gap-4 cursor-pointer select-none slide-up
+                                            ${matched.has(item.id) ? 'bg-green-50 border-green-200 opacity-60 pointer-events-none' : 
+                                              selectedTerm === item.id ? 'bg-orange-50 border-[#F26522] shadow-md scale-[1.02]' : 
+                                              wrongPair && wrongPair[0] === item.id ? 'bg-red-50 border-red-500 shake' : 'bg-white border-transparent hover:border-slate-200 shadow-sm'}
+                                        `}
+                                        style={{ animationDelay: `${idx * 50}ms` }}
+                                    >
+                                        <div className={`p-2 rounded-lg ${matched.has(item.id) ? 'bg-green-500 text-white' : 'bg-orange-100 text-[#F26522]'}`}>
+                                            <Icon name={item.icon} size={18} />
+                                        </div>
+                                        <span className={`font-bold text-sm ${matched.has(item.id) ? 'text-green-700' : 'text-slate-700'}`}>
+                                            {item.term}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
 
-function updateScore() {
-  document.getElementById('scoreText').textContent = `${matched.size} / ${DATA.length}`;
-  document.getElementById('progressBar').style.width = `${(matched.size / DATA.length) * 100}%`;
-}
+                            {/* Column Definitions */}
+                            <div className="space-y-3">
+                                <h3 className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest px-2 mb-4">
+                                    <Icon name="file-text" size={14} /> Definiciones
+                                </h3>
+                                {defs.map((item, idx) => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => selectDef(item.id)}
+                                        className={`
+                                            card-transition p-4 rounded-2xl border-2 cursor-pointer select-none slide-up min-h-[80px] flex items-center
+                                            ${matched.has(item.id) ? 'bg-green-50 border-green-200 opacity-60 pointer-events-none' : 
+                                              selectedDef === item.id ? 'bg-orange-50 border-[#F26522] shadow-md scale-[1.02]' : 
+                                              wrongPair && wrongPair[1] === item.id ? 'bg-red-50 border-red-500 shake' : 'bg-white border-transparent hover:border-slate-200 shadow-sm'}
+                                        `}
+                                        style={{ animationDelay: `${idx * 50 + 100}ms` }}
+                                    >
+                                        <span className={`text-xs leading-relaxed font-medium ${matched.has(item.id) ? 'text-green-700' : 'text-slate-600'}`}>
+                                            {item.def}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
 
-function showToast(msg) {
-  const old = document.querySelector('.toast-msg');
-  if (old) old.remove();
-  const t = document.createElement('div');
-  t.className = 'toast-msg';
-  t.innerHTML = `<div class="flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-light text-white" style="background:#FF801F;">
-    <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
-    <span>${msg}</span>
-  </div>`;
-  document.body.appendChild(t);
-  lucide.createIcons();
-  setTimeout(() => t.remove(), 2800);
-}
+                        {/* Hint Panel */}
+                        {hint && (
+                            <div className="mt-10 p-4 bg-orange-50 border-2 border-orange-200 rounded-2xl flex items-start gap-4 animate-in slide-in-from-bottom-4 duration-300">
+                                <Icon name="info" className="text-[#F26522] mt-1" />
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-orange-800 text-sm mb-1">Pista</h4>
+                                    <p className="text-xs text-orange-700 italic">{hint}</p>
+                                </div>
+                                <button onClick={() => setHint(null)} className="text-orange-300 hover:text-orange-500">
+                                    <Icon name="x" size={18} />
+                                </button>
+                            </div>
+                        )}
+                    </main>
 
-function spawnConfetti(anchor) {
-  const rect = anchor.getBoundingClientRect();
-  const colors = ['#FF801F', '#FFB366', '#22c55e', '#fbbf24', '#f97316'];
-  for (let i = 0; i < 12; i++) {
-    const c = document.createElement('div');
-    c.className = 'confetti-piece';
-    c.style.left = `${rect.left + Math.random() * rect.width}px`;
-    c.style.top = `${rect.top}px`;
-    c.style.background = colors[Math.floor(Math.random() * colors.length)];
-    c.style.animationDelay = `${Math.random() * 0.3}s`;
-    document.body.appendChild(c);
-    setTimeout(() => c.remove(), 2000);
-  }
-}
+                    {/* Win Modal */}
+                    {showWin && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-500">
+                            <div className="bg-white rounded-[40px] p-10 max-w-md w-full text-center shadow-2xl slide-up">
+                                <div className="win-pulse mb-8 inline-block">
+                                    <div className="w-24 h-24 rounded-full flex items-center justify-center text-white shadow-xl" style={{ background: `linear-gradient(135deg, ${COLORS.naranja}, #ff8c42)` }}>
+                                        <Icon name="award" size={48} />
+                                    </div>
+                                </div>
+                                <h2 className="text-3xl font-black mb-2 text-[#003366]">¡Victoria Total!</h2>
+                                <p className="text-slate-500 text-sm mb-8 italic">Has dominado los conceptos de la Ley 594.</p>
+                                
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    <div className="bg-slate-50 p-4 rounded-3xl">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Intentos</span>
+                                        <span className="text-2xl font-black text-[#003366]">{attempts}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-3xl">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Precisión</span>
+                                        <span className="text-2xl font-black text-[#8CC63F]">{accuracy}%</span>
+                                    </div>
+                                </div>
 
-function showHint() {
-  const unmatched = DATA.filter(d => !matched.has(d.id));
-  if (!unmatched.length) return;
-  const pick = unmatched[Math.floor(Math.random() * unmatched.length)];
-  document.getElementById('hintText').textContent = `"${pick.term}" → ${pick.hint}`;
-  document.getElementById('hintPanel').classList.remove('hidden');
-  lucide.createIcons();
-}
+                                <button 
+                                    onClick={initGame}
+                                    className="w-full py-5 rounded-full text-white font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all"
+                                    style={{ backgroundColor: COLORS.naranja }}
+                                >
+                                    VOLVER A JUGAR
+                                </button>
+                                <p className="mt-6 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Institución Universitaria de Envigado</p>
+                            </div>
+                        </div>
+                    )}
 
-function showWin() {
-  const accuracy = Math.round((DATA.length / attempts) * 100);
-  document.getElementById('winStats').textContent = `Intentos: ${attempts} · Precisión: ${accuracy}%`;
-  document.getElementById('winOverlay').classList.remove('hidden');
-  lucide.createIcons();
-}
+                    <footer className="bg-white p-6 border-t border-slate-100 flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-4">
+                            <div className="h-[2px] w-8 bg-[#F26522]"></div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">IUE • @iueoficial</p>
+                            <div className="h-[2px] w-8 bg-[#003366]"></div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
 
-function resetGame() {
-  matched.clear();
-  selectedTerm = null;
-  selectedDef = null;
-  attempts = 0;
-  updateScore();
-  document.getElementById('winOverlay').classList.add('hidden');
-  document.getElementById('hintPanel').classList.add('hidden');
-  buildGame();
-}
-
-// Element SDK
-window.elementSdk.init({
-  defaultConfig,
-  onConfigChange: async (config) => {
-    const c = { ...defaultConfig, ...config };
-    const titleEl = document.getElementById('gameTitle');
-    if (titleEl) titleEl.textContent = c.game_title;
-
-    document.body.querySelector('#app').style.background = c.background_color;
-
-    const baseSize = c.font_size || defaultConfig.font_size;
-    document.querySelectorAll('.term-card span:last-child').forEach(el => el.style.fontSize = `${baseSize}px`);
-    document.querySelectorAll('.def-card span').forEach(el => el.style.fontSize = `${baseSize * 0.85}px`);
-    if (titleEl) titleEl.style.fontSize = `${baseSize * 1.5}px`;
-
-    const font = c.font_family || defaultConfig.font_family;
-    document.querySelectorAll('*').forEach(el => {
-      el.style.fontFamily = `${font}, Kanit, sans-serif`;
-    });
-  },
-  mapToCapabilities: (config) => ({
-    recolorables: [
-      { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-      { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-      { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-      { get: () => config.accent_color || defaultConfig.accent_color, set: v => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
-      { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: v => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); } }
-    ],
-    borderables: [],
-    fontEditable: {
-      get: () => config.font_family || defaultConfig.font_family,
-      set: v => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
-    },
-    fontSizeable: {
-      get: () => config.font_size || defaultConfig.font_size,
-      set: v => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
-    }
-  }),
-  mapToEditPanelValues: (config) => new Map([
-    ["game_title", config.game_title || defaultConfig.game_title],
-    ["success_message", config.success_message || defaultConfig.success_message]
-  ])
-});
-
-buildGame();
-lucide.createIcons();
-</script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e9621fd97ee492b',t:'MTc3NTcwMjI3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
